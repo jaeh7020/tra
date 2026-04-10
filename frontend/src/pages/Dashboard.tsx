@@ -18,7 +18,7 @@ export default function Dashboard() {
         <h2>Active Watch Rules ({activeRules.length})</h2>
         {activeRules.length === 0 ? (
           <p>
-            No active watch rules. <Link to="/rules/new">Add one</Link>
+            No active watch rules. <Link to="/rules">Add one</Link>
           </p>
         ) : (
           <table>
