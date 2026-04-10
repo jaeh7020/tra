@@ -62,7 +62,9 @@ def health_check():
 
 
 # Serve frontend static files in production
-FRONTEND_DIR = Path(__file__).resolve().parent.parent.parent / "frontend" / "dist"
+# Works for both local dev (tra/frontend/dist) and Docker (/app/frontend/dist)
+_backend_root = Path(__file__).resolve().parent.parent  # backend/
+FRONTEND_DIR = _backend_root.parent / "frontend" / "dist"
 if FRONTEND_DIR.is_dir():
     app.mount("/assets", StaticFiles(directory=FRONTEND_DIR / "assets"), name="assets")
 
