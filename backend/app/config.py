@@ -10,6 +10,7 @@ class Settings(BaseSettings):
     SCHEDULER_INTERVAL_MINUTES: int = 3
     LINE_CHANNEL_ACCESS_TOKEN: str = ""
     LINE_CHANNEL_SECRET: str = ""
+    APP_URL: str = "https://tra-monitor-production.up.railway.app"
 
     model_config = {"env_file": ".env"}
 

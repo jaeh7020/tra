@@ -1,6 +1,7 @@
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useMe } from "./api/hooks";
 import Dashboard from "./pages/Dashboard";
+import LinkLine from "./pages/LinkLine";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
@@ -39,6 +40,7 @@ function App() {
           <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/rules" element={token ? <WatchRules /> : <Navigate to="/login" />} />
           <Route path="/settings" element={token ? <Settings /> : <Navigate to="/login" />} />
+          <Route path="/link-line" element={<LinkLine />} />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </div>

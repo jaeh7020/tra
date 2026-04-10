@@ -51,6 +51,15 @@ class AlertHistory(Base):
     watch_rule: Mapped["WatchRule"] = relationship(back_populates="alert_history")
 
 
+class LinkNonce(Base):
+    __tablename__ = "link_nonces"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    nonce: Mapped[str] = mapped_column(String(255), unique=True, nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+
+
 class CachedStation(Base):
     __tablename__ = "cached_stations"
 

@@ -1,10 +1,14 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+import secrets
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi.responses import RedirectResponse
 from fastapi.security import OAuth2PasswordBearer
 from sqlalchemy.orm import Session
 
+from app.config import settings
 from app.database import get_db
-from app.models import User
-from app.schemas import LineUserIdUpdate, Token, UserCreate, UserLogin, UserOut
+from app.models import LinkNonce, User
+from app.schemas import Token, UserCreate, UserLogin, UserOut
 from app.utils.security import (
     create_access_token,
     decode_access_token,
@@ -61,23 +65,48 @@ def get_me(current_user: User = Depends(get_current_user)):
     )
 
 
-@router.post("/line-user-id")
-async def update_line_user_id(
-    data: LineUserIdUpdate,
-    current_user: User = Depends(get_current_user),
+@router.get("/link-line")
+def link_line(
+    linkToken: str = Query(...),
+    token: str = Query(...),
     db: Session = Depends(get_db),
 ):
-    from app.services.notifier import send_line_message
+    """
+    LINE account linking endpoint (step 4 of the flow).
+    User arrives here from the frontend with their JWT token as a query param.
+    We generate a nonce, store it, and redirect to LINE's accountLink endpoint.
+    """
+    # Verify JWT from query param
+    payload = decode_access_token(token)
+    if payload is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user_id = payload.get("sub")
+    if user_id is None:
+        raise HTTPException(status_code=401, detail="Invalid token")
+    user = db.query(User).filter(User.id == int(user_id)).first()
+    if user is None:
+        raise HTTPException(status_code=401, detail="User not found")
 
-    current_user.line_user_id = data.line_user_id
+    # Generate a secure nonce
+    nonce = secrets.token_urlsafe(32)
+
+    # Store nonce → user mapping
+    link_nonce = LinkNonce(nonce=nonce, user_id=user.id)
+    db.add(link_nonce)
     db.commit()
 
-    # Send a confirmation message to verify the link works
-    await send_line_message(
-        data.line_user_id,
-        "TRA Train Monitor 連結成功！\n"
-        "您的帳號已成功綁定 LINE 通知。\n"
-        "當您監控的列車發生誤點或停駛時，將會透過此帳號通知您。"
+    # Redirect to LINE's account linking endpoint
+    return RedirectResponse(
+        url=f"https://access.line.me/dialog/bot/accountLink?linkToken={linkToken}&nonce={nonce}"
     )
 
-    return {"message": "LINE User ID updated"}
+
+@router.get("/link-line-page")
+def link_line_page(linkToken: str = Query(...)):
+    """
+    Redirect to the frontend login page with the linkToken.
+    Users who aren't logged in land here first.
+    """
+    return RedirectResponse(
+        url=f"{settings.APP_URL}/link-line?linkToken={linkToken}"
+    )

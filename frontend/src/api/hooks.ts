@@ -131,14 +131,3 @@ export function useStations() {
   });
 }
 
-// --- LINE ---
-
-export function useUpdateLineUserId() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async (line_user_id: string) => {
-      await api.post("/auth/line-user-id", { line_user_id });
-    },
-    onSuccess: () => qc.invalidateQueries({ queryKey: ["me"] }),
-  });
-}
