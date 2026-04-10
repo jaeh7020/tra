@@ -62,11 +62,22 @@ def get_me(current_user: User = Depends(get_current_user)):
 
 
 @router.post("/line-user-id")
-def update_line_user_id(
+async def update_line_user_id(
     data: LineUserIdUpdate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
+    from app.services.notifier import send_line_message
+
     current_user.line_user_id = data.line_user_id
     db.commit()
+
+    # Send a confirmation message to verify the link works
+    await send_line_message(
+        data.line_user_id,
+        "TRA Train Monitor 連結成功！\n"
+        "您的帳號已成功綁定 LINE 通知。\n"
+        "當您監控的列車發生誤點或停駛時，將會透過此帳號通知您。"
+    )
+
     return {"message": "LINE User ID updated"}
