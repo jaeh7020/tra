@@ -1,8 +1,6 @@
 import { Link, Navigate, Route, Routes, useNavigate } from "react-router-dom";
 import { useMe } from "./api/hooks";
-import AddRule from "./pages/AddRule";
 import Dashboard from "./pages/Dashboard";
-import EditRule from "./pages/EditRule";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Settings from "./pages/Settings";
@@ -40,8 +38,6 @@ function App() {
           <Route path="/register" element={token ? <Navigate to="/" /> : <Register />} />
           <Route path="/" element={token ? <Dashboard /> : <Navigate to="/login" />} />
           <Route path="/rules" element={token ? <WatchRules /> : <Navigate to="/login" />} />
-          <Route path="/rules/new" element={token ? <AddRule /> : <Navigate to="/login" />} />
-          <Route path="/rules/:id/edit" element={token ? <EditRule /> : <Navigate to="/login" />} />
           <Route path="/settings" element={token ? <Settings /> : <Navigate to="/login" />} />
         </Routes>
       </div>
