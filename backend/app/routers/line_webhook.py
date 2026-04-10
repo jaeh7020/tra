@@ -3,12 +3,15 @@ import hmac
 import base64
 import logging
 
+import httpx
 from fastapi import APIRouter, Header, HTTPException, Request
 from sqlalchemy.orm import Session
 
 from app.config import settings
 from app.database import SessionLocal
 from app.models import User
+
+LINE_REPLY_URL = "https://api.line.me/v2/bot/message/reply"
 
 logger = logging.getLogger(__name__)
 
@@ -61,6 +64,13 @@ async def line_webhook(request: Request, x_line_signature: str = Header(...)):
                             "LINE user %s not yet linked. User can link via Settings page with this ID.",
                             line_user_id,
                         )
+            elif event_type == "message":
+                line_user_id = event.get("source", {}).get("userId")
+                reply_token = event.get("replyToken")
+                if line_user_id and reply_token:
+                    # Reply with the user's LINE User ID so they can paste it in Settings
+                    await _reply_with_user_id(reply_token, line_user_id)
+
             elif event_type == "unfollow":
                 line_user_id = event.get("source", {}).get("userId")
                 if line_user_id:
@@ -75,3 +85,30 @@ async def line_webhook(request: Request, x_line_signature: str = Header(...)):
         db.close()
 
     return {"status": "ok"}
+
+
+async def _reply_with_user_id(reply_token: str, line_user_id: str):
+    """Reply to a user message with their LINE User ID."""
+    try:
+        async with httpx.AsyncClient() as client:
+            await client.post(
+                LINE_REPLY_URL,
+                headers={
+                    "Authorization": f"Bearer {settings.LINE_CHANNEL_ACCESS_TOKEN}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "replyToken": reply_token,
+                    "messages": [
+                        {
+                            "type": "text",
+                            "text": (
+                                f"Your LINE User ID:\n\n{line_user_id}\n\n"
+                                "請複製上方 ID，貼到 TRA Train Monitor 的 Settings 頁面即可完成綁定。"
+                            ),
+                        }
+                    ],
+                },
+            )
+    except Exception:
+        logger.exception("Failed to reply with user ID")
